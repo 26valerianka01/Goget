@@ -1,0 +1,8 @@
+mysql-connector-python>=9.0.0
+ttkbootstrap>=1.10.0
+Pillow>=10.0.0
+folium>=0.15.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+bcrypt>=4.0.0
+pytest>=8.0.0

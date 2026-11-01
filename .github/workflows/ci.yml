@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: goget
+          MYSQL_DATABASE: goget
+          MYSQL_USER: goget
+          MYSQL_PASSWORD: goget
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pgoget"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Init schema and seed
+        env:
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_PORT: "3307"
+          MYSQL_USER: goget
+          MYSQL_PASSWORD: goget
+          MYSQL_DATABASE: goget
+        run: |
+          python - <<'PY'
+          import time
+          import mysql.connector
+          from pathlib import Path
+
+          for _ in range(30):
+              try:
+                  conn = mysql.connector.connect(
+                      host="127.0.0.1", port=3307, user="goget", password="goget", database="goget"
+                  )
+                  conn.close()
+                  break
+              except Exception:
+                  time.sleep(2)
+          else:
+              raise SystemExit("MySQL not ready")
+
+          root = Path(".")
+          schema = (root / "docker/mysql/init/01_schema.sql").read_text(encoding="utf-8")
+          seed = (root / "docker/mysql/init/02_seed.sql").read_text(encoding="utf-8")
+          conn = mysql.connector.connect(
+              host="127.0.0.1", port=3307, user="goget", password="goget", database="goget"
+          )
+          cur = conn.cursor()
+          for script in (schema, seed):
+              for stmt in script.split(";"):
+                  s = stmt.strip()
+                  if s:
+                      cur.execute(s)
+          conn.commit()
+          cur.close()
+          conn.close()
+          PY
+
+      - name: Run unit tests (no DB)
+        env:
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_PORT: "3307"
+          MYSQL_USER: goget
+          MYSQL_PASSWORD: goget
+          MYSQL_DATABASE: goget
+        run: pytest -q tests/test_geocode_utils.py tests/test_validators.py tests/test_passwords.py
+
+      - name: Run DB tests
+        env:
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_PORT: "3307"
+          MYSQL_USER: goget
+          MYSQL_PASSWORD: goget
+          MYSQL_DATABASE: goget
+        run: pytest -q tests/test_database.py tests/test_order_flow.py

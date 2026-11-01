@@ -1,0 +1,34 @@
+# GoGet - MySQL с готовой схемой и демо-данными
+# Запуск: docker compose up -d
+# Сброс БД: docker compose down -v && docker compose up -d
+
+name: goget
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: goget-mysql
+    restart: unless-stopped
+    ports:
+      - "3307:3306"   # 3307 на хосте, чтобы не конфликтовать с локальным MySQL
+    environment:
+      MYSQL_ROOT_PASSWORD: goget
+      MYSQL_DATABASE: goget
+      MYSQL_USER: goget
+      MYSQL_PASSWORD: goget
+      TZ: Europe/Moscow
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - goget_mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-pgoget"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  goget_mysql_data:

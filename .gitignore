@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+!.env.docker
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Tests / cache
+.pytest_cache/
+.coverage
+htmlcov/
+_pdf_ui/
+_restructure.py
+
+# Runtime
+logs/*.log
+*.html
+!docs/**/*.html
+Foto/
+
+# Local DB dumps / secrets
+*.sql.bak
+credentials.json
+secrets/
